@@ -61,6 +61,20 @@ function love.load()
 	-- Load font
 	font = love.graphics.newImageFont('assets/font.png', ' !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~')
 	love.graphics.setFont(font)
+
+	-- Load music
+	musicTrack = love.audio.newSource('assets/music.wav', 'static')
+	musicTrack:setLooping(true)
+
+	-- Load sound effects
+	shootSfx = love.audio.newSource('assets/laser.wav', 'static')
+	shootSfx:setVolume(0.5)
+
+	playerDestroySfx = love.audio.newSource('assets/death.wav', 'static')
+	playerDestroySfx:setVolume(0.5)
+
+	enemyDestroySfx = love.audio.newSource('assets/explosion.wav', 'static')
+	enemyDestroySfx:setVolume(0.75)
 end
 
 function love.update(dt)
@@ -90,7 +104,7 @@ function love.update(dt)
 
 		-- Game over if touching bottom of screen
 		if player.y > (screen.height - player.height) then
-			gamestate = 'dead'
+			endGame()
 		end
 
 		-- Update animations
@@ -126,11 +140,12 @@ function love.update(dt)
 					enemy.removed = true
 					bullet.x = 1000
 					score = score + 100
+					playSound(enemyDestroySfx)
 				end
 
 				-- Collision checking (player)
 				if checkCollision(enemy.x,enemy.y,enemy.width,enemy.height,player.x,player.y,player.width,player.height) then
-					gamestate = 'dead'
+					endGame()
 				end
 			else table.remove(enemies, i) end
 		end
@@ -210,7 +225,7 @@ function love.draw(dt)
 		-- Draw full canvas and scale
 		love.graphics.draw(canvas, 0, 0, 0, 2, 2)
 
-		-- Game over
+		-- Draw game over screen
 		if gamestate == 'dead' then
 			love.graphics.setCanvas(canvas)
 			love.graphics.setColor(0, 0, 0)
@@ -246,10 +261,24 @@ function startGame()
 	-- Reset enemies
 	enemies = {}
 
+	-- Start music
+	musicTrack:play()
+
 	-- Spawn enemies
 	for i=1,2 do
 		newEnemy(500, love.math.random(20, 216))
 	end
+end
+
+function endGame()
+	-- Stop music
+	musicTrack:stop()
+
+	-- Play sound
+	playSound(playerDestroySfx)
+
+	-- Game over
+	gamestate = 'dead'
 end
 
 function shootGun()
@@ -257,7 +286,15 @@ function shootGun()
 	if bullet.x > screen.width then
 		bullet.x = player.x + player.width
 		bullet.y = player.y + ((player.height / 2) - (bullet.height / 2))
+		playSound(shootSfx)
 	end
+end
+
+function playSound(sound)
+	sound:stop()
+	pitchMod = 0.8 + love.math.random(0, 10) / 25
+	sound:setPitch(pitchMod)
+	sound:play()
 end
 
 --[[
