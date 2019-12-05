@@ -1,6 +1,6 @@
-# Moonman
+# ![Logo](https://github.com/synthic/moonman/raw/master/assets/logo.png)
 
-A game about an astronaut made with [LÖVE](https://love2d.org).<br><br>
+A game about an astronaut made with [LÖVE](https://love2d.org).
 
 ## Credits
 

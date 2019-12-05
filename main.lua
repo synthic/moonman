@@ -1,13 +1,10 @@
--- Version number
-version = 'V1.0'
-
--- Timer variable
-dtotal = 0
-
--- Enemies table
-enemies = {}
-
 function love.load()
+	-- Version number
+	version = 'V1.0'
+
+	-- Timer variable
+	dtotal = 0
+
 	-- Set screen attributes
 	screen = {
 		width = 320,
@@ -36,9 +33,6 @@ function love.load()
 
 	-- Set game state
 	gamestate = 'title'
-
-	-- Initialize score
-	score = 0
 
 	-- Set window attributes
 	love.window.setTitle('Moonman')
@@ -141,6 +135,11 @@ function love.update(dt)
 					bullet.x = 1000
 					score = score + 100
 					playSound(enemyDestroySfx)
+
+					local explosion = getExplosion(getBlast(50))
+					explosion:setPosition(enemy.x + enemy.width/2, enemy.y + enemy.height/2)
+					explosion:emit(5)
+					table.insert(explosions, explosion)
 				end
 
 				-- Collision checking (player)
@@ -148,6 +147,15 @@ function love.update(dt)
 					endGame()
 				end
 			else table.remove(enemies, i) end
+		end
+
+		-- Update explosions
+		for i=#explosions, 1, -1 do
+			local explosion = explosions[i]
+			explosion:update(dt)
+			if explosion:getCount() == 0 then
+				table.remove(explosions, i)
+			end
 		end
 
 		-- Timer (1s)
@@ -216,8 +224,14 @@ function love.draw(dt)
 			love.graphics.draw(animEnemy.spriteSheet, animEnemy.quads[spriteNum], enemy.x, enemy.y)
 		end
 
-		-- Draw projectiles
+		-- Draw projectile
 		love.graphics.draw(bullet.img, bullet.x, bullet.y)
+
+		-- Draw explosions
+		for i=#explosions, 1, -1 do
+			local explosion = explosions[i]
+			love.graphics.draw(explosion, 0, 0)
+		end
 
 		-- Set drawing target to window
 		love.graphics.setCanvas()
@@ -238,17 +252,6 @@ function love.draw(dt)
 	end
 end
 
-function newEnemy(x,y)
-	local enemy = {}
-	enemy.x = x
-	enemy.y = y
-	enemy.width = 24
-	enemy.height = 24
-	enemy.speed = love.math.random(100, 300)
-	enemy.removed = false
-	table.insert(enemies, enemy)
-end
-
 function startGame()
 	-- Reset positions
 	player.x = 40
@@ -258,8 +261,9 @@ function startGame()
 	-- Reset score
 	score = 0
 
-	-- Reset enemies
+	-- Reset entities
 	enemies = {}
+	explosions = {}
 
 	-- Start music
 	musicTrack:play()
@@ -284,10 +288,21 @@ end
 function shootGun()
 	-- Shoot if no projectile on screen
 	if bullet.x > screen.width then
-		bullet.x = player.x + player.width
+		bullet.x = player.x + player.width - 2
 		bullet.y = player.y + ((player.height / 2) - (bullet.height / 2))
 		playSound(shootSfx)
 	end
+end
+
+function newEnemy(x,y)
+	local enemy = {}
+	enemy.x = x
+	enemy.y = y
+	enemy.width = 24
+	enemy.height = 24
+	enemy.speed = love.math.random(100, 300)
+	enemy.removed = false
+	table.insert(enemies, enemy)
 end
 
 function playSound(sound)
@@ -295,6 +310,24 @@ function playSound(sound)
 	pitchMod = 0.8 + love.math.random(0, 10) / 25
 	sound:setPitch(pitchMod)
 	sound:play()
+end
+
+function getBlast(size)
+	local blast = love.graphics.newCanvas(size, size)
+	love.graphics.setCanvas(blast)
+	love.graphics.setColor(255, 255, 255, 255)
+	love.graphics.circle('fill', size/2, size/2, size/2)
+	love.graphics.setCanvas()
+	return blast
+end
+
+function getExplosion(image)
+	pSystem = love.graphics.newParticleSystem(image, 30)
+	pSystem:setParticleLifetime(0.5, 0.5)
+	pSystem:setLinearAcceleration(-100, -100, 100, 100)
+	pSystem:setColors(255, 255, 0, 255, 255, 153, 51, 255, 64, 64, 64, 0)
+	pSystem:setSizes(0.5, 0.5)
+	return pSystem
 end
 
 --[[
